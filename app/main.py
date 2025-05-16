@@ -1,15 +1,33 @@
-from manim import *
+from script_gen import generate_script
+import subprocess
+import re
 
-class RedCircleToSquare(Scene):
-    def construct(self):
-        # Create a red circle
-        circle = Circle(color=RED)
+def main():
+    prompt = input("📝 Enter your prompt: ")
+    output_file = "generated_scene.py"
+    model = "llama3"
 
-        # Animate the creation of the circle
-        self.play(Create(circle))
+    generate_script(prompt, model=model, output_path=output_file)
 
-        # Change the shape to a square
-        self.play(Transform(circle, Square(color=RED)))
+    with open(output_file, "r") as f:
+        script_content = f.read()
 
-        # Hold the final state for a second
-        self.wait(1)
+    if "class GeneratedScene" not in script_content:
+        script_content = script_content.replace("class MyScene", "class GeneratedScene")
+        with open(output_file, "w") as f:
+            f.write(script_content)
+        print("✅ Updated script to use 'GeneratedScene' class.")
+
+    # Automatically extract the class name from the script
+    class_name_match = re.search(r'class (\w+)', script_content)
+    if class_name_match:
+        class_name = class_name_match.group(1)
+        print(f"✅ Found class name: {class_name}")
+    else:
+        class_name = "GeneratedScene"  # Default to GeneratedScene if no class is found
+        print("❌ No class name found, using default 'GeneratedScene'")
+
+    subprocess.run(["manim", "-pql", output_file, class_name])
+
+if __name__ == "__main__":
+    main()
