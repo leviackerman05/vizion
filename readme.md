@@ -16,6 +16,6 @@
 
 1. Run the code using `python app/main.py`
 
-2. Enter the prompt to generate a manim script
+2. Enter your prompt of which a manim script will be generated
 
-3. The script which will be saved in the generated_scene.py file and render a video
+3. The script will then be saved in the generated_scene.py file and render a video
