@@ -24,3 +24,7 @@ generated_scene.py
 # Ignore OS files
 .DS_Store
 Thumbs.db
+
+# Ignore all files inside static except placeholder
+app/static/*
+!app/static/.gitkeep
