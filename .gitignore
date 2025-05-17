@@ -28,3 +28,4 @@ Thumbs.db
 # Ignore all files inside static except placeholder
 app/static/*
 !app/static/.gitkeep
+.env
