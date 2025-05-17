@@ -1,6 +1,26 @@
-# .gitignore
-venv/
+# Ignore environment secrets
+env/.env
+
+# Ignore Python cache and virtualenv
 __pycache__/
 *.pyc
-.env
-output/
+*.pyo
+*.pyd
+venv/
+.env/
+
+# Ignore Manim generated files
+media/
+*.mp4
+*.png
+*.svg
+*.log
+generated_scene.py
+
+# Ignore IDE files
+.vscode/
+.idea/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db

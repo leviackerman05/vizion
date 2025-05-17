@@ -5,7 +5,7 @@ import re
 def main():
     prompt = input("📝 Enter your prompt: ")
     output_file = "generated_scene.py"
-    model = "llama3"
+    model = "gemini-2.0-flash"  # Or "llama3" if still using Ollama for testing
 
     generate_script(prompt, model=model, output_path=output_file)
 
@@ -24,7 +24,7 @@ def main():
         class_name = class_name_match.group(1)
         print(f"✅ Found class name: {class_name}")
     else:
-        class_name = "GeneratedScene"  # Default to GeneratedScene if no class is found
+        class_name = "GeneratedScene"
         print("❌ No class name found, using default 'GeneratedScene'")
 
     subprocess.run(["manim", "-pql", output_file, class_name])
