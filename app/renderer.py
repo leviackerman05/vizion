@@ -21,7 +21,7 @@ def render_manim_script(script_path: str, class_name: str = "GeneratedScene") ->
     # Run the Manim render command
     command = [
         "manim",
-        "-pql",
+        "-pqh",
         script_path,
         class_name,
         "--media_dir", output_dir,

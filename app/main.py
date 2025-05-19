@@ -49,7 +49,7 @@ def cli_mode():
 
     subprocess.run([
         "manim",
-        "-pql",
+        "-pqh",
         output_path,
         class_name,
         "--media_dir", "app/static/outputs"
