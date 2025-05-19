@@ -1,27 +1,135 @@
-## Steps to setup enviorment
+# 🎬 Text-to-Manim Video Generator
 
-1) Create a virtual enviornment (Only the first time)
+This project lets you generate educational videos using natural language prompts. You can describe a concept like _"Graph y = x² and show its shift to (x-2)²"_, and the app will create a Manim animation script and render a video for it.
 
-```python -m venv venv```
+Supports both CLI and API usage.
 
-2) Activate the virtual enviornment
+---
 
-```venv\Scripts\activate```
+## ⚙️ Environment Setup
 
-3) Install deps 
+1. **Create a virtual environment** (first time only):
 
-```pip install -r requirements.txt```
+```bash
+python -m venv venv
+```
 
+2. **Activate the virtual environment**:
 
-## Steps to run the code 
+```bash
+# On Windows
+venv\Scripts\activate
 
-1) Add manim code to main.py
+# On macOS/Linux
+source venv/bin/activate
+```
 
-2) Run this command (Replace the YourClassName with the class name used in your code) - 
+3. **Install dependencies**:
 
-```manim -pqh app/main.py YouClassName --media_dir output```
+```bash
+pip install -r requirements.txt
+```
 
-3) The result will be stored in the ./output directory 
+4. **Configure environment variables**:
 
+Create a `.env` file in the root directory:
 
+```env
+GEMINI_API_KEY=your-api-key-here
+```
 
+> 🔐 `.env` Add your Gemini API key here.
+
+---
+
+## ▶️ Running in CLI Mode
+
+To generate videos from your terminal:
+
+```bash
+python -m app.main
+```
+
+- You'll be prompted for a natural language description (e.g., `"Visualize a vector addition"`).
+- The script will be saved in `app/static/outputs/generated_scene.py`.
+- The video will be rendered and saved to:
+
+```
+app/static/outputs/videos/generated_scene/480p15/scene.mp4
+```
+
+---
+
+## 🌐 Running the API
+
+To run the FastAPI server:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Visit the interactive Swagger docs at:
+
+📍 http://localhost:8000/docs
+
+### Example API call
+
+```bash
+curl -X POST http://localhost:8000/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Animate the derivation of a² + b² = c²"}'
+```
+
+Returns:
+
+```json
+{
+  "video_url": "/static/outputs/videos/generated_scene/480p15/scene.mp4"
+}
+```
+
+Access the video at:
+
+📽️ http://localhost:8000/static/outputs/videos/generated_scene/480p15/scene.mp4
+
+---
+
+## 📁 Project Structure (Simplified)
+
+```
+app/
+├── main.py               # CLI & FastAPI entry
+├── script_gen.py         # Gemini + prompt pipeline
+├── renderer.py           # Manim rendering subprocess
+├── models.py             # Request/response schemas
+├── prompt_engine/
+│   ├── prompts.py
+│   ├── intent_detector.py
+│   └── smart_intent_detector.py
+└── static/
+    └── outputs/
+        ├── generated_scene.py
+        └── videos/
+```
+
+---
+
+## 🛑 Git-ignored Files
+
+- `.env` — contains sensitive API keys
+- `app/static/outputs/` — stores generated scripts/videos
+
+---
+
+## 🧠 Examples to Try
+
+- `"Explain the Pythagorean theorem step by step"`
+- `"Graph y = sin(x) and y = cos(x)"`
+- `"Show how a negative charge moves through an electric field"`
+- `"Steps to make chicken curry"`
+
+---
+
+## 📦 Dependencies
+
+Ensure you have Manim CE 0.19.0 installed and `pdflatex` (from MiKTeX/TeX Live) for MathTex support.
