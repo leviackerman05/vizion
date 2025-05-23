@@ -65,19 +65,32 @@ app/static/outputs/videos/generated_scene/480p15/scene.mp4
 To run the FastAPI server:
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app
 ```
 
 Visit the interactive Swagger docs at:
 
 📍 http://localhost:8000/docs
 
-### Example API call
+### API call to GET all chats
+
+#### GET /chats
 
 ```bash
-curl -X POST http://localhost:8000/generate \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Animate the derivation of a² + b² = c²"}'
+curl http://localhost:8000/chats/user_123
+```
+
+### API call to use chat
+
+#### POST /chat
+
+params: 
+- user_id = user_123
+- chat_id = uuid string
+- prompt = string
+
+```bash
+curl -X POST http://localhost:8001/chat -H "Content-Type: application/json" -d "{\"user_id\":\"user_123\",\"chat_id\":\"8ca1f3a4-5ef3-4d26-9e58-dd394fd4dd6e\",\"prompt\":\"draw a red circle\"}"
 ```
 
 Returns:
