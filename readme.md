@@ -107,33 +107,6 @@ Access the video at:
 
 ---
 
-## 📁 Project Structure (Simplified)
-
-```
-app/
-├── main.py               # CLI & FastAPI entry
-├── script_gen.py         # Gemini + prompt pipeline
-├── renderer.py           # Manim rendering subprocess
-├── models.py             # Request/response schemas
-├── prompt_engine/
-│   ├── prompts.py
-│   ├── intent_detector.py
-│   └── smart_intent_detector.py
-└── static/
-    └── outputs/
-        ├── generated_scene.py
-        └── videos/
-```
-
----
-
-## 🛑 Git-ignored Files
-
-- `.env` — contains sensitive API keys
-- `app/static/outputs/` — stores generated scripts/videos
-
----
-
 ## 🧠 Examples to Try
 
 - `"Explain the Pythagorean theorem step by step"`
