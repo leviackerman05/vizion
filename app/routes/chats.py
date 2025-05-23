@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from app.models.schemas import ChatSummary
 from app.firebase.chat_service import *
 from fastapi import APIRouter, HTTPException
@@ -15,7 +15,7 @@ def fetch_user_chats(user_id: str):
     return get_user_chats(user_id)
 
 @router.post("/chat")
-def generate_and_render(req: GenerateRequest):
+def generate_and_render(req: GenerateRequest, request: Request):
     # Step 1: Save user prompt message
     add_message(req.user_id, req.chat_id, req.prompt)
 
@@ -35,9 +35,12 @@ def generate_and_render(req: GenerateRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Video rendering failed: {str(e)}")
 
+    # Optional: store latest code + URL in Firestore
     update_latest_code(req.user_id, req.chat_id, generated_code)
 
-    return GenerateResponse(video_url=video_url)
+    # 🔥 Convert relative video path to full URL for frontend
+    full_url = f"{request.base_url}{video_url.lstrip('/')}"
+    return GenerateResponse(video_url=full_url)
 
 @router.get("/chats/{user_id}/{chat_id}")
 def fetch_chat(user_id: str, chat_id: str):
