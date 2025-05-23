@@ -29,3 +29,5 @@ Thumbs.db
 app/static/*
 !app/static/.gitkeep
 .env
+
+/app/text-to-anim-firebase-adminsdk-fbsvc-69810e8d63.json
