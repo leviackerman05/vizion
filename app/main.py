@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.routes import chats, generation
+from app.routes import chats
 
 app = FastAPI()
 
@@ -14,6 +14,6 @@ app.add_middleware(
 )
 
 app.include_router(chats.router)
-app.include_router(generation.router)
+# app.include_router(generation.router)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

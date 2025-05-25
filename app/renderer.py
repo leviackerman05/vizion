@@ -9,18 +9,18 @@ def camel_to_snake(name: str) -> str:
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 def render_manim_script(script_path: str, chat_id: str, class_name: str = "GeneratedScene") -> str:
-    # Define output directory per chat
-    output_dir = f"app/static/outputs/videos/generated_{chat_id}"
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    # Use shared output base dir, let Manim handle subfolders
+    base_media_dir = "app/static/outputs"
+    Path(base_media_dir).mkdir(parents=True, exist_ok=True)
 
     # Run the Manim render command
     command = [
         "manim",
-        "-pqh",
+        "-ql",
+        "-o", "scene.mp4",
+        "--media_dir", base_media_dir,
         script_path,
-        class_name,
-        "--media_dir", output_dir,
-        "--output_file", "scene.mp4"
+        class_name
     ]
     subprocess.run(command, check=True)
 

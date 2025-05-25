@@ -18,6 +18,9 @@ from app.prompt_engine.script_validation import check_for_invalid_manim_methods
 # Load environment variables
 load_dotenv()
 
+conversation_history = []  # Keeps track of prior prompts and responses
+
+
 def extract_code_from_response(text: str) -> str:
     match = re.search(r"```(?:python)?\n(.*?)```", text, re.DOTALL)
     if match:
@@ -26,21 +29,42 @@ def extract_code_from_response(text: str) -> str:
     start_index = text.find("from manim import *")
     return text[start_index:].strip() if start_index != -1 else text.strip()
 
-def generate_prompt_parts(user_prompt: str) -> list:
+
+def generate_prompt_template(user_prompt: str) -> str:
     intent = detect_intent(user_prompt)
-    template = PROMPT_TEMPLATES.get(intent, PROMPT_TEMPLATES["concept_explanation"])
-    parts = [
-        {"text": template("").strip()},
-        {"text": user_prompt.strip()}
-    ]
-    return [{"parts": parts}]
+    template_fn = PROMPT_TEMPLATES.get(intent, PROMPT_TEMPLATES["concept_explanation"])
+    return template_fn("").strip()
+
 
 def generate_script(user_prompt: str, model: str = "gemini-2.0-flash", output_path: str = "app/static/outputs/generated_scene.py") -> str:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise EnvironmentError("❌ GEMINI_API_KEY environment variable is not set.")
+        raise EnvironmentError("\u274c GEMINI_API_KEY environment variable is not set.")
 
-    payload = {"contents": generate_prompt_parts(user_prompt)}
+    # Load previous script if this is a new session
+    if not conversation_history and os.path.exists(output_path):
+        with open(output_path, 'r', encoding='utf-8') as f:
+            last_script = f.read()
+        conversation_history.append({"role": "model", "content": last_script})
+
+    # If history is empty, include the prompt template as system prompt
+    if not conversation_history:
+        system_prompt = generate_prompt_template(user_prompt)
+        conversation_history.append({"role": "user", "content": system_prompt})
+
+    # Add user prompt to conversation history
+    conversation_history.append({"role": "user", "content": user_prompt})
+
+    # Build Gemini request payload with full conversation history
+    contents = []
+    for msg in conversation_history:
+        contents.append({
+            "role": msg["role"],
+            "parts": [{"text": msg["content"]}]
+        })
+
+    payload = {"contents": contents}
+    print(f"Payload: {payload}")
     print(f"\n Sending prompt to model: {model}")
 
     response = requests.post(
@@ -86,5 +110,8 @@ def generate_script(user_prompt: str, model: str = "gemini-2.0-flash", output_pa
 
     Path(output_path).write_text(script_code, encoding="utf-8")
     print(f" Manim script saved to: {output_path}\n")
+
+    # Add model response to history
+    conversation_history.append({"role": "model", "content": script_code})
 
     return script_code
