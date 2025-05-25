@@ -14,6 +14,5 @@ app.add_middleware(
 )
 
 app.include_router(chats.router)
-# app.include_router(generation.router)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

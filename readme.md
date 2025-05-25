@@ -80,6 +80,14 @@ Visit the interactive Swagger docs at:
 curl http://localhost:8000/chats/user_123
 ```
 
+### API call to GET all chats
+
+#### GET /chatsdata
+
+```bash
+curl http://localhost:8000/chatdata/user_123/chatID
+```
+
 ### API call to use chat
 
 #### POST /chat

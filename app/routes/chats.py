@@ -42,10 +42,9 @@ def generate_and_render(req: GenerateRequest, request: Request):
     full_url = f"{request.base_url}{video_url.lstrip('/')}"
     return GenerateResponse(video_url=full_url)
 
-@router.get("/chats/{user_id}/{chat_id}")
+@router.get("/chatdata/{user_id}/{chat_id}")
 def fetch_chat(user_id: str, chat_id: str):
     data = get_chat_messages(user_id, chat_id)
     if not data:
         raise HTTPException(status_code=404, detail="Chat not found")
-    latest_code = get_latest_code(user_id)
-    return {"messages": data["messages"], "latestCode": latest_code}
+    return {"messages": data["messages"], "latestCode": data['latest_code'][0]}

@@ -12,3 +12,7 @@ class GenerateResponse(BaseModel):
 class ChatSummary(BaseModel):
     chat_id: str
     createdAt: str
+
+class ChatData(BaseModel):
+    messages: List[str]
+    latest_code: str
