@@ -2,20 +2,30 @@ from app.firebase.firebase_init import db
 from google.cloud.firestore_v1 import ArrayUnion
 from datetime import datetime
 from typing import List, Dict
+from google.cloud.exceptions import NotFound
 
 def get_user_chats(user_id: str) -> List[Dict]:
-    chats_ref = db.collection("users").document(user_id).collection("chats")
-    return [
-        {"chat_id": chat.id, "createdAt": chat.to_dict().get("createdAt")}
-        for chat in chats_ref.stream()
-    ]
+    try:
+        chats_ref = db.collection("users").document(user_id).collection("chats")
+        chats = chats_ref.stream()
 
-def create_chat(user_id: str, chat_id: str, message: dict):
-    chat_ref = db.collection("users").document(user_id).collection("chats").document(chat_id)
-    chat_ref.set({
-        "createdAt": datetime.utcnow().isoformat(),
-        "messages": [message]
-    })
+        chat_list = []
+        for chat in chats:
+            try:
+                chat_list.append({
+                    "chat_id": chat.id,
+                    "createdAt": chat.get("createdAt"),
+                    "name": chat.get("name")
+                })
+            except Exception as e:
+                print(f"⚠️ Failed to read chat '{chat.id}': {e}")
+                continue
+
+        return chat_list
+
+    except Exception as e:
+        print(f"❌ Unexpected error while fetching chats: {e}")
+        return []
 
 def add_message(user_id: str, chat_id: str, prompt: str):
     print(f"➡️  Adding message for user: {user_id}, chat: {chat_id}")
@@ -27,13 +37,20 @@ def add_message(user_id: str, chat_id: str, prompt: str):
         print("📄 Chat does not exist. Creating new chat document...")
         chat_ref.set({
             "createdAt": datetime.utcnow().isoformat(),
-            "messages": ArrayUnion([prompt])
+            "messages": ArrayUnion([{
+                "message": prompt,
+                "timestamp": datetime.utcnow().isoformat(),
+            }]),
+            "name": prompt,
         })
         print("✅ Chat document created with first message.")
     else:
         print("📝 Chat exists. Appending message with ArrayUnion...")
         chat_ref.update({
-            "messages": ArrayUnion([prompt])
+            "messages": ArrayUnion([{
+                "message": prompt,
+                "timestamp": datetime.utcnow().isoformat(),
+            }])
         })
         print("✅ Message added to existing chat.")
 

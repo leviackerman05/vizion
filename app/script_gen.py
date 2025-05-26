@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from typing import List, Optional
 
 from app.prompt_engine.prompts import PROMPT_TEMPLATES
+from app.models.schemas import ChatMessage
 try:
     from app.prompt_engine.smart_intent_detector import detect_intent
     print("Using smart intent detector (embedding-based)")
@@ -36,7 +37,7 @@ def generate_prompt_template(user_prompt: str) -> str:
 
 def generate_script(
     user_prompt: str,
-    prevMessages: Optional[List[str]] = None,
+    prevMessages: Optional[List[ChatMessage]] = None,
     latest_code: Optional[str] = None,
     model: str = "gemini-2.0-flash",
     output_path: str = "app/static/outputs/generated_scene.py"
@@ -54,7 +55,7 @@ def generate_script(
 
     if prevMessages:
         for msg in prevMessages:
-            conversation_history.append({"role": "user", "content": msg})
+            conversation_history.append({"role": "user", "content": msg['message']})
 
     # Load previous script if this is a new session
     if latest_code and os.path.exists(output_path):

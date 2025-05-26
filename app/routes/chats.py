@@ -16,8 +16,6 @@ def fetch_user_chats(user_id: str):
 
 @router.post("/chat")
 def generate_and_render(req: GenerateRequest, request: Request):
-    # Clean chat_id to use in filename safely
-    # chat_id = re.sub(r'\W+', '', req.chat_id)
     output_script_path = f"app/static/outputs/generated_{req.chat_id}.py"
 
     # Step 1: Save user prompt message
