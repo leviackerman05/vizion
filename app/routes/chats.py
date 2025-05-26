@@ -17,13 +17,13 @@ def fetch_user_chats(user_id: str):
 @router.post("/chat")
 def generate_and_render(req: GenerateRequest, request: Request):
     # Clean chat_id to use in filename safely
-    chat_id = re.sub(r'\W+', '', req.chat_id)
-    output_script_path = f"app/static/outputs/generated_{chat_id}.py"
+    # chat_id = re.sub(r'\W+', '', req.chat_id)
+    output_script_path = f"app/static/outputs/generated_{req.chat_id}.py"
 
     # Step 1: Save user prompt message
     add_message(req.user_id, req.chat_id, req.prompt)
 
-    chatData = get_chat_messages(req.user_id, chat_id)
+    chatData = get_chat_messages(req.user_id, req.chat_id)
 
     # Step 2: Generate code from LLM
     try:
@@ -32,7 +32,7 @@ def generate_and_render(req: GenerateRequest, request: Request):
         messages = chatData.get('messages') if isinstance(chatData, dict) else None
         print("Extracted messages:", messages)
 
-        latest_code_list = chatData.get('latestCode') if isinstance(chatData, dict) else None
+        latest_code_list = chatData.get('latest_code') if isinstance(chatData, dict) else None
         print("Extracted latest_code_list:", latest_code_list)
 
         # Fallbacks in case of missing data
@@ -65,7 +65,7 @@ def generate_and_render(req: GenerateRequest, request: Request):
 
     # Step 3: Try to render the video
     try:
-        video_url = render_manim_script(output_script_path, chat_id=chat_id)
+        video_url = render_manim_script(output_script_path, chat_id=req.chat_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Video rendering failed: {str(e)}")
 
