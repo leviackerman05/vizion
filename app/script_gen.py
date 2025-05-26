@@ -4,6 +4,7 @@ import ast
 import requests
 from pathlib import Path
 from dotenv import load_dotenv
+from typing import List, Optional
 
 from app.prompt_engine.prompts import PROMPT_TEMPLATES
 try:
@@ -17,9 +18,6 @@ from app.prompt_engine.script_validation import check_for_invalid_manim_methods
 
 # Load environment variables
 load_dotenv()
-
-conversation_history = []  # Keeps track of prior prompts and responses
-
 
 def extract_code_from_response(text: str) -> str:
     match = re.search(r"```(?:python)?\n(.*?)```", text, re.DOTALL)
@@ -36,23 +34,32 @@ def generate_prompt_template(user_prompt: str) -> str:
     return template_fn("").strip()
 
 
-def generate_script(user_prompt: str, model: str = "gemini-2.0-flash", output_path: str = "app/static/outputs/generated_scene.py") -> str:
+def generate_script(
+    user_prompt: str,
+    prevMessages: Optional[List[str]] = None,
+    latest_code: Optional[str] = None,
+    model: str = "gemini-2.0-flash",
+    output_path: str = "app/static/outputs/generated_scene.py"
+) -> str:
+    conversation_history = []  # Keeps track of prior prompts and responses
+
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise EnvironmentError("\u274c GEMINI_API_KEY environment variable is not set.")
-
-    # Load previous script if this is a new session
-    if not conversation_history and os.path.exists(output_path):
-        with open(output_path, 'r', encoding='utf-8') as f:
-            last_script = f.read()
-        conversation_history.append({"role": "model", "content": last_script})
 
     # If history is empty, include the prompt template as system prompt
     if not conversation_history:
         system_prompt = generate_prompt_template(user_prompt)
         conversation_history.append({"role": "user", "content": system_prompt})
 
-    # Add user prompt to conversation history
+    if prevMessages:
+        for msg in prevMessages:
+            conversation_history.append({"role": "user", "content": msg})
+
+    # Load previous script if this is a new session
+    if latest_code and os.path.exists(output_path):
+        conversation_history.append({"role": "model", "content": latest_code})
+
     conversation_history.append({"role": "user", "content": user_prompt})
 
     # Build Gemini request payload with full conversation history
