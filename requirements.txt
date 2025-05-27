@@ -50,6 +50,7 @@ mypy_extensions==1.1.0
 networkx==3.4.2
 numpy==2.2.5
 ollama==0.4.8
+openai==1.82.0
 packaging==25.0
 pathspec==0.12.1
 pillow==11.2.1
