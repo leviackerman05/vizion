@@ -61,10 +61,12 @@ async def login_user(data: AuthRequest, request: Request):
     resp_data = response.json()
     uid = resp_data["localId"]
     session_id = str(uuid.uuid4())
+    expiry = datetime.utcnow() + timedelta(days=SESSION_EXPIRY_DAYS)
 
     db = firestore.client()
     db.collection("users").document(uid).collection("sessions").document(session_id).set({
         "loginAt": datetime.utcnow(),
+        "expiresAt": expiry,
         "ip": request.client.host,
         "userAgent": request.headers.get("user-agent"),
         "active": True,
@@ -74,7 +76,26 @@ async def login_user(data: AuthRequest, request: Request):
         "idToken": resp_data["idToken"],
         "uid": uid,
         "email": resp_data["email"],
+        "sessionId": session_id,
     }
+
+@router.post("/logout")
+async def logout_user(request: Request):
+    uid = request.headers.get("x-uid")
+    session_id = request.headers.get("x-session-id")
+
+    if not uid or not session_id:
+        raise HTTPException(status_code=400, detail="Missing session headers")
+
+    db = firestore.client()
+    session_ref = db.collection("users").document(uid).collection("sessions").document(session_id)
+    session_doc = session_ref.get()
+
+    if not session_doc.exists:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    session_ref.update({"active": False, "logoutAt": datetime.utcnow()})
+    return {"status": "success", "message": "Session deactivated"}
 
 @router.get("/sessions/{uid}")
 def get_user_sessions(uid: str):
@@ -86,11 +107,17 @@ def get_user_sessions(uid: str):
     for doc in session_docs:
         data = doc.to_dict()
         login_time = data.get("loginAt")
+        expiry_time = data.get("expiresAt")
 
-        if not login_time:
+        if not login_time or not expiry_time:
             continue
 
-        if data.get("active") and (now - login_time).days <= SESSION_EXPIRY_DAYS:
+        # Auto-deactivate expired sessions
+        if datetime.utcnow() > expiry_time:
+            db.collection("users").document(uid).collection("sessions").document(doc.id).update({"active": False})
+            continue
+
+        if data.get("active"):
             sessions.append({**data, "sessionId": doc.id})
 
     return {"sessions": sessions}
