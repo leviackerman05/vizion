@@ -71,6 +71,7 @@ Pygments==2.19.1
 PyJWT==2.10.1
 pyparsing==3.2.3
 python-dotenv==1.0.1
+razorpay==1.4.2
 requests==2.31.0
 rich==14.0.0
 rsa==4.9.1
