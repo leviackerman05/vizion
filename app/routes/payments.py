@@ -148,12 +148,14 @@ async def verify_razorpay_subscription(verification_data: VerifySubscriptionRequ
             # Update Firebase database here to mark the subscription as active
             subscription_details = client.subscription.fetch(attributes["razorpay_subscription_id"])
 
+            print("Subscription Details:", subscription_details)
+
             payment_info = PaymentDetails(
                 razorpay_subscription_id=verification_data.razorpay_subscription_id,
                 razorpay_payment_id=verification_data.razorpay_payment_id,
                 status=subscription_details['status'],
-                start_date=subscription_details['current_start'],
-                end_date=subscription_details['current_end'],
+                start_date=str(subscription_details['current_start']),
+                end_date=str(subscription_details['current_end']),
                 plan_id=subscription_details['plan_id']
             )
 

@@ -8,8 +8,8 @@ class PaymentDetails(BaseModel):
     razorpay_payment_id: Optional[str] = None
     razorpay_subscription_id: str
     status: str
-    start_date: int
-    end_date: int
+    start_date: str
+    end_date: str
     plan_id: str
 
 def add_payment_details(user_id: str, payment_details: PaymentDetails, customer_id: str):
@@ -51,8 +51,8 @@ def check_for_active_subscriptions(user_id: str) -> bool:
         if payments and isinstance(payments, dict):
             status = payments.get("status")
             if status == "active":
-                return False  # Found an active subscription
-    return True  # No active subscription found or user doesn't exist
+                return True  # Found an active subscription
+    return False  # No active subscription found or user doesn't exist
 
 def get_active_plan_id(user_id: str) -> Optional[str]:
     user_ref = db.collection('users').document(user_id)
