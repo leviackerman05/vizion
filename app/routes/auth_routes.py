@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from firebase_admin import firestore
 from typing import List
+from app.firebase.payment_service import get_active_plan_id
 
 load_dotenv()
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
@@ -60,23 +61,16 @@ async def login_user(data: AuthRequest, request: Request):
 
     resp_data = response.json()
     uid = resp_data["localId"]
-    session_id = str(uuid.uuid4())
-    expiry = datetime.utcnow() + timedelta(days=SESSION_EXPIRY_DAYS)
 
-    db = firestore.client()
-    db.collection("users").document(uid).collection("sessions").document(session_id).set({
-        "loginAt": datetime.utcnow(),
-        "expiresAt": expiry,
-        "ip": request.client.host,
-        "userAgent": request.headers.get("user-agent"),
-        "active": True,
-    })
+    active_plan = get_active_plan_id(uid)
+
+    print(f"active plan: {active_plan}")
 
     return {
         "idToken": resp_data["idToken"],
         "uid": uid,
         "email": resp_data["email"],
-        "sessionId": session_id,
+        "active_plan": active_plan,
     }
 
 @router.post("/logout")

@@ -59,7 +59,6 @@ def fetch_chat_messages_only(user_id: str, chat_id: str):
     return { "messages": data["messages"] }
 
 
-
 @router.get("/video/{user_id}/{chat_id}")
 def fetch_video_from_latest_code(user_id: str, chat_id: str, request: Request):
     data = get_chat_messages(user_id, chat_id)
