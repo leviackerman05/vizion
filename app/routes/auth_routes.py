@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from firebase_admin import firestore
 from typing import List
 from app.firebase.payment_service import get_active_plan_id
+from app.firebase.firebase_init import db
 
 load_dotenv()
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
@@ -61,6 +62,8 @@ async def login_user(data: AuthRequest, request: Request):
 
     resp_data = response.json()
     uid = resp_data["localId"]
+
+    db.collection("users").document(uid).set({}, merge=True)
 
     active_plan = get_active_plan_id(uid)
 

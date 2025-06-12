@@ -9,7 +9,7 @@ from typing import Optional, List
 from dotenv import load_dotenv
 import razorpay
 
-from app.firebase.payment_service import PaymentDetails, add_payment_details, check_for_active_subscriptions, find_user_by_razorpay_customer_id
+from app.firebase.payment_service import PaymentDetails, add_payment_details, check_for_active_subscriptions, find_user_by_razorpay_subscription_id
 
 load_dotenv()
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
@@ -151,6 +151,7 @@ async def verify_razorpay_subscription(verification_data: VerifySubscriptionRequ
             print("Subscription Details:", subscription_details)
 
             payment_info = PaymentDetails(
+                customer_id=subscription_details['customer_id'],
                 razorpay_subscription_id=verification_data.razorpay_subscription_id,
                 razorpay_payment_id=verification_data.razorpay_payment_id,
                 status=subscription_details['status'],
@@ -159,7 +160,7 @@ async def verify_razorpay_subscription(verification_data: VerifySubscriptionRequ
                 plan_id=subscription_details['plan_id']
             )
 
-            add_payment_details(verification_data.user_id, payment_info, subscription_details['customer_id'])
+            add_payment_details(verification_data.user_id, payment_info)
 
             print("Subscription Details:", subscription_details)
             return {"status": "success", "message": "Subscription verified"}
@@ -213,7 +214,7 @@ async def process_webhook_event(event: dict):
     event_type = event.get("event")
     payload = event.get("payload")
 
-    print(f"Received webhook event: {event_type}") # Log all events
+    print(f"Received webhook event: {payload}") # Log all events
 
     customer_id = payload['subscription']['entity']['customer_id']
     subscription_id = payload['subscription']['entity']['id']
@@ -222,18 +223,19 @@ async def process_webhook_event(event: dict):
     start = payload['subscription']['entity']['current_start']
     end = payload['subscription']['entity']['current_end']
 
-    user_id, user_data = find_user_by_razorpay_customer_id(customer_id)
+    user_id, user_data = find_user_by_razorpay_subscription_id(subscription_id)
     if user_id:
         print(f"Found user with ID: {user_id}")
 
         payment_info = PaymentDetails(
+            customer_id=customer_id,
             razorpay_subscription_id=subscription_id,
             status=status,
-            start_date=start,
-            end_date=end,
+            start_date=str(start),
+            end_date=str(end),
             plan_id=plan_id
         )
 
-        add_payment_details(user_id, payment_info, customer_id)
+        add_payment_details(user_id, payment_info)
     else:
-        print(f"No user found with Razorpay customer ID: {customer_id}")
+        print(f"No user found with Razorpay subscription ID: {subscription_id}")
