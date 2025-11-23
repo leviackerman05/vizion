@@ -14,9 +14,8 @@ def render_manim_script(script_path: str, class_name: str = "GeneratedScene") ->
     manim_output_subpath = f"videos/{class_name}/480p15/scene.mp4"
     manim_output_path = os.path.join(output_dir, manim_output_subpath)
 
-    # Convert class name to snake_case for returned URL
-    snake_case_class = camel_to_snake(class_name)
-    url_path = f"/static/outputs/videos/{snake_case_class}/480p15/scene.mp4"
+    # Use the exact class name for the URL path to match Manim's output directory
+    url_path = f"/static/outputs/videos/{class_name}/480p15/scene.mp4"
 
     # Run the Manim render command
     command = [

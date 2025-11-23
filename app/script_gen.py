@@ -15,6 +15,9 @@ except Exception:
 
 from app.prompt_engine.script_validation import check_for_invalid_manim_methods
 
+# NEW: Import template engine
+from app.template_engine import generate_from_template
+
 # Load environment variables
 load_dotenv()
 
@@ -35,13 +38,18 @@ def generate_prompt_parts(user_prompt: str) -> list:
     ]
     return [{"parts": parts}]
 
-def generate_script(user_prompt: str, model: str = "gemini-2.0-flash", output_path: str = "app/static/outputs/generated_scene.py") -> str:
+def generate_script_with_raw_llm(user_prompt: str, model: str, output_path: str) -> str:
+    """
+    Original code generation approach - generates raw code using LLM prompts.
+    Used as fallback when template system doesn't match.
+    """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise EnvironmentError("❌ GEMINI_API_KEY environment variable is not set.")
 
     payload = {"contents": generate_prompt_parts(user_prompt)}
-    print(f"\n Sending prompt to model: {model}")
+    print(f"\n⚠️  Using fallback raw generation mode")
+    print(f" Sending prompt to model: {model}")
 
     response = requests.post(
         f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}",
@@ -84,7 +92,37 @@ def generate_script(user_prompt: str, model: str = "gemini-2.0-flash", output_pa
         print(" Raw output:\n", script_code)
         return ""
 
-    Path(output_path).write_text(script_code, encoding="utf-8")
+    return script_code
+
+
+def generate_script(user_prompt: str, model: str = "gemini-2.0-flash", output_path: str = "app/static/outputs/generated_scene.py") -> str:
+    """
+    Main script generation function.
+    
+    NEW BEHAVIOR:
+    1. Try template system first (guaranteed layout)
+    2. Fall back to raw LLM generation if no template matches
+    """
+    
+    # Step 1: Try template system
+    print("\n🎯 Attempting template-based generation...")
+    script_code, status = generate_from_template(user_prompt)
+    
+    if script_code:
+        print("✅ Template generation successful!")
+    else:
+        print(f"❌ Template generation failed: {status}")
+        print("🔄 Falling back to raw LLM generation...")
+        script_code = generate_script_with_raw_llm(user_prompt, model, output_path)
+        
+        if not script_code:
+            print("❌ Raw generation also failed")
+            return ""
+    
+    # Save the generated script
+    output_file = Path(output_path)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    output_file.write_text(script_code, encoding="utf-8")
     print(f" Manim script saved to: {output_path}\n")
 
     return script_code
