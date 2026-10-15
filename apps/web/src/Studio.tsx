@@ -325,9 +325,11 @@ export function Studio({
             revision: project.revision,
           }),
         });
-        setDirty(false);
-        draftDirty.current = false;
-        setDraft(current.storyboard ? clone(current.storyboard) : null);
+        if (activeProject.current === current.id) {
+          setDirty(false);
+          draftDirty.current = false;
+          setDraft(current.storyboard ? clone(current.storyboard) : null);
+        }
       }
       if (name !== "save")
         current = await post<Project>(
