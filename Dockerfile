@@ -15,9 +15,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY pyproject.toml ./
-COPY services/video services/video
-RUN pip install '.[render]'
+RUN python -c "import tomllib; p=tomllib.load(open('pyproject.toml','rb'))['project']; print('\n'.join(p['dependencies'] + p['optional-dependencies']['render']))" > /tmp/requirements.txt \
+    && pip install -r /tmp/requirements.txt
 RUN mkdir -p /opt/piper && python -m piper.download_voices --data-dir /opt/piper en_US-ljspeech-high
+COPY services/video services/video
+RUN pip install --no-deps .
 COPY --from=web-build /build/apps/web/dist apps/web/dist
 RUN useradd --create-home --uid 10001 vizion && mkdir -p /tmp/vizion && chown vizion:vizion /tmp/vizion
 USER vizion

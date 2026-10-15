@@ -1,6 +1,6 @@
 # Vizion
 
-A topic becomes a reviewable storyboard, then a narrated Manim video. The MVP focuses on one short teaching objective at a time, with an editor, persistent jobs, private exports, and reliable account sessions.
+A topic becomes a storyboard checked by an independent model review, then a narrated Manim video after user approval. The MVP focuses on one short teaching objective at a time, with an editor, persistent jobs, private exports, and reliable account sessions.
 
 ## Repository
 

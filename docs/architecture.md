@@ -4,7 +4,7 @@ The browser uses a same-origin API. Accounts, session hashes, recovery-code hash
 
 The worker claims a queued project under a row lock and gives each attempt a unique fencing token. It renews a lease while working. Every progress/final update checks the token. Restarts recover expired leases; old or cancelled attempts cannot overwrite newer results. Projects are durable jobs, so API restarts cannot lose an in-memory task.
 
-The planner requests strict JSON from Groq's `openai/gpt-oss-120b`. Pydantic validates narration budgets, supported scene types, bounded arithmetic, graph domains, and array indices. Validation feedback permits up to three attempts. Clicking Render approves the saved storyboard revision. Concurrent edits during rendering are rejected.
+The planner requests strict JSON from Groq's `openai/gpt-oss-120b`. Pydantic validates narration budgets, supported scene types, bounded arithmetic, graph domains, and array indices. Each generation stage permits up to three validation attempts. A separate structured critic reviews facts and visual correspondence; rejected drafts get one repair and another review. Persistent errors are not published as completed storyboards. Clicking Render approves the saved storyboard revision. Concurrent edits during rendering are rejected.
 
 Rendering measures offline speech per scene. Static Manim code reads validated JSON and holds visuals for the measured audio duration. FFmpeg joins narrated clips. Burned-in captions and WebVTT use measured scene durations with approximate phrase timing, not word-level forced alignment.
 
