@@ -2,6 +2,8 @@
 
 A topic becomes a storyboard checked by an independent model review, then a narrated Manim video after user approval. The MVP focuses on one short teaching objective at a time, with an editor, persistent jobs, private exports, and reliable account sessions.
 
+Live MVP: [Open Vizion](https://web-production-958eeb.up.railway.app). See [verification results](docs/verification.md).
+
 ## Repository
 
 - `apps/web`: responsive React / TypeScript studio.
@@ -47,5 +49,7 @@ Unit tests do not spend model quota or render full videos. End-to-end acceptance
 ## Scope
 
 English, landscape 720p / 24fps, approximately 30-90 second lessons, six constrained visual types: function curves, number arrays, concept relationships, steps, comparisons, and a Pythagorean diagram. Arbitrary 3D scenes and documentary footage are future work. The renderer executes checked-in Python only; the model supplies validated data.
+
+Accounts now live in Railway PostgreSQL. Legacy Firebase/Supabase accounts are not automatically imported; create a new workspace unless a separate user-data migration is performed.
 
 Signup displays a recovery code once. Save it: this MVP uses recovery codes instead of paid email delivery and does not verify email ownership. Keep usage small until adding verified email, stronger abuse controls, project deletion / retention, billing, and production migrations. Daily limits constrain render usage but do not guarantee Railway stays within a fixed monthly credit amount.

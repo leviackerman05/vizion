@@ -34,6 +34,8 @@ railway up --service web --detach
 railway up --service worker --detach
 ```
 
+Route the generated web domain to the service's injected `PORT` (8080 in this project). A domain targeting 8000 while the process listens on 8080 will return 502.
+
 Use one region/replica on the existing plan. Keep sleeping disabled for this dedicated project. `railway.toml` uses `/api/health`; the worker also exposes it. Initial resource caps: web 0.5 GB / 1 CPU, worker 2 GB / 2 CPUs. These are ceilings, not reservations or spending caps. Renders, PostgreSQL, storage, and always-on memory consume the Railway allowance.
 
 Use Railway variable references and secret inputs. Keep credentials out of command arguments, screenshots, Git, and chat. Set `PUBLIC_URL` to the final HTTPS domain on both services; it controls cookie and origin checks.
