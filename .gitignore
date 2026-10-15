@@ -1,35 +1,29 @@
-# Ignore environment secrets
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!**/.env.production.example
 env/.env
-
-# Ignore Python cache and virtualenv
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-venv/
-.env/
-
-# Ignore Manim generated files
+.railway/
+# Generated media, local database, temporary setup files
+data/
 media/
-app/data/
-*.mp4
-*.png
-*.svg
 *.log
 generated_scene.py
-
-# Ignore IDE files
+# Python / Node build artifacts
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+*.tsbuildinfo
+playwright-report/
+# Editors / OS
 .vscode/
 .idea/
-
-# Ignore OS files
 .DS_Store
 Thumbs.db
-
-# Ignore all files inside static except placeholder
-app/static/*
-!app/static/.gitkeep
-.env
-
-# Frontend is a separate repo — do not commit nested vizion-ui/
-vizion-ui/

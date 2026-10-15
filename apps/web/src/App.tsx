@@ -1,56 +1,104 @@
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ThemeProvider } from "@/components/theme/theme-provider";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import Index from "./pages/Index";
-import LoginPage from "./pages/LoginPage";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
-import SignupPage from "./pages/SignupPage";
+import { Component, ErrorInfo, ReactNode, useEffect, useState } from "react";
+import { LoaderCircle } from "lucide-react";
+import { api, ApiError } from "./api";
+import { AuthScreen, Brand } from "./AuthScreen";
+import { Studio } from "./Studio";
+import type { User } from "./types";
 
-const queryClient = new QueryClient();
-
-function isTokenExpired(token: string | null): boolean {
-  if (!token) return true;
-  try {
-    const [, payload] = token.split(".");
-    const decoded = JSON.parse(atob(payload));
-    return decoded.exp * 1000 < Date.now();
-  } catch {
-    return true;
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error(error, info.componentStack);
+  }
+  render() {
+    return this.state.failed ? (
+      <main className="boot">
+        <Brand />
+        <h2>The workspace hit a problem.</h2>
+        <p>Your projects are saved on the server.</p>
+        <button
+          className="button primary"
+          onClick={() => window.location.reload()}
+        >
+          Reload workspace
+        </button>
+      </main>
+    ) : (
+      this.props.children
+    );
   }
 }
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const token = localStorage.getItem("token");
-  if (!token || isTokenExpired(token)) {
-    localStorage.clear();
-    return <Navigate to="/login" replace />;
-  }
-  return children;
-};
+function Workspace() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [expired, setExpired] = useState("");
+  useEffect(() => {
+    let live = true;
+    api<{ user: User }>("/auth/me")
+      .then((result) => {
+        if (live) setUser(result.user);
+      })
+      .catch((err) => {
+        if (live && !(err instanceof ApiError && err.status === 401))
+          setError(
+            "Cannot reach your workspace. Check your connection and try again.",
+          );
+      })
+      .finally(() => {
+        if (live) setLoading(false);
+      });
+    const onExpired = () => {
+      setUser(null);
+      setExpired(
+        "Your session expired. Sign in to continue; your projects are saved.",
+      );
+    };
+    window.addEventListener("vizion:session-expired", onExpired);
+    return () => {
+      live = false;
+      window.removeEventListener("vizion:session-expired", onExpired);
+    };
+  }, []);
+  if (loading)
+    return (
+      <main className="boot">
+        <Brand />
+        <LoaderCircle className="spin" />
+        <p>Opening your workspace…</p>
+      </main>
+    );
+  if (error)
+    return (
+      <main className="boot">
+        <Brand />
+        <p role="alert">{error}</p>
+        <button
+          className="button primary"
+          onClick={() => window.location.reload()}
+        >
+          Try again
+        </button>
+      </main>
+    );
+  return user ? (
+    <Studio user={user} onLogout={() => setUser(null)} />
+  ) : (
+    <AuthScreen onLogin={setUser} message={expired} />
+  );
+}
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark" storageKey="vizion-theme">
-        <TooltipProvider>
-          <Sonner position="top-right" />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
-
-export default App;
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <Workspace />
+    </ErrorBoundary>
+  );
+}

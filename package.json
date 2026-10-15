@@ -1,0 +1,17 @@
+{
+  "name": "vizion-monorepo",
+  "version": "0.2.0",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @vizion/web",
+    "build": "npm run build --workspace @vizion/web",
+    "lint": "npm run lint --workspace @vizion/web",
+    "check": "npm run build && npm run lint"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

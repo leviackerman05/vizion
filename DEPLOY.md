@@ -1,216 +1,52 @@
-# Deploying Vizion
+# Railway deployment
 
-Production stack: **Supabase** (auth + DB + video storage) · **Railway** (backend + Manim) · **Vercel** (frontend)
+Use one dedicated Vizion project with `web`, `worker`, managed `Postgres`, and a private `vizion-videos` bucket. Both app services build the root Dockerfile. Web serves the frontend and API on one origin; worker claims PostgreSQL jobs and renders one lesson at a time. Database records and bucket exports survive redeploys. Temporary render files need no volume.
 
-Estimated cost to start: **$0–20/mo** (Supabase/Groq/Vercel free tiers + Railway ~$5+)
+## Variables
 
----
+Both services need:
 
-## Prerequisites
-
-- GitHub repo pushed with this code
-- Accounts: [Supabase](https://supabase.com), [Railway](https://railway.app), [Vercel](https://vercel.com), [Groq](https://console.groq.com)
-- Optional: [Stripe](https://stripe.com) for Pro billing
-
----
-
-## Step 1 — Supabase (production)
-
-### 1.1 Create project
-
-1. Go to [supabase.com/dashboard](https://supabase.com/dashboard) → **New project**
-2. Save your database password
-
-### 1.2 Run database setup
-
-**Option A — SQL Editor (easiest)**
-
-1. Open **SQL Editor** in Supabase Dashboard
-2. Paste and run the entire file: [`supabase/production_setup.sql`](supabase/production_setup.sql)
-
-**Option B — CLI**
-
-```bash
-npm i -g supabase
-supabase login
-supabase link --project-ref YOUR_PROJECT_REF
-supabase db push
+```dotenv
+ENVIRONMENT=production
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+PUBLIC_URL=https://YOUR-WEB-DOMAIN
+S3_ENDPOINT_URL=YOUR-RAILWAY-BUCKET-ENDPOINT
+S3_ACCESS_KEY_ID=YOUR-BUCKET-ACCESS-KEY
+S3_SECRET_ACCESS_KEY=YOUR-BUCKET-SECRET
+S3_BUCKET=YOUR-BUCKET-NAME
+S3_REGION=YOUR-BUCKET-REGION
+S3_ADDRESSING_STYLE=virtual
+DAILY_PROJECT_LIMIT=5
+DAILY_RENDER_LIMIT=3
+GLOBAL_DAILY_RENDER_LIMIT=10
 ```
 
-### 1.3 Verify storage bucket
+Set `APP_ROLE=web` on web. Set `APP_ROLE=worker`, `LLM_PROVIDER=groq`, `GROQ_API_KEY`, and `TTS_PROVIDER=piper` on worker. Keep the model key out of web and frontend build variables. The image downloads an offline English Piper voice during build, so narration uses no paid TTS API.
 
-In **Storage**, confirm a public bucket named **`videos`** exists.
+Startup rejects production SQLite, HTTP public URLs, missing private storage credentials, and workers missing a provider key or configured voice. Schema initialization takes a PostgreSQL advisory lock so simultaneous service starts are safe.
 
-### 1.4 Copy API keys
+## Deploy
 
-**Project Settings → API**:
+Link the root repository to the intended Railway project/environment:
 
-| Variable | Where to use |
-|----------|--------------|
-| `SUPABASE_URL` | Railway backend |
-| `SUPABASE_ANON_KEY` | Railway backend |
-| `SUPABASE_SERVICE_KEY` | Railway backend only (secret) |
-
-### 1.5 Auth URLs (after you have Vercel URL)
-
-**Authentication → URL Configuration**:
-
-- **Site URL:** `https://YOUR_APP.vercel.app`
-- **Redirect URLs:** `https://YOUR_APP.vercel.app/login`
-
----
-
-## Step 2 — Backend on Railway
-
-### 2.1 Create service
-
-1. [railway.app/new](https://railway.app/new) → **Deploy from GitHub repo**
-2. Select this repository
-3. Railway reads [`railway.toml`](railway.toml) and builds with [`Dockerfile`](Dockerfile)
-
-### 2.2 Set environment variables
-
-In Railway → your service → **Variables**, add (see [`env.example`](env.example)):
-
-```env
-ENV=production
-
-SUPABASE_URL=https://xxxx.supabase.co
-SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_KEY=eyJ...
-
-LLM_PROVIDER=groq
-GROQ_API_KEY=gsk_...
-GROQ_MODEL=qwen/qwen3-32b
-
-FRONTEND_URL=https://YOUR_APP.vercel.app
-
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_PRICE_ID=price_...
+```powershell
+railway up --service web --detach
+railway up --service worker --detach
 ```
 
-> First deploy takes ~5–10 min (Manim + LaTeX + ML model download).
+Use one region/replica on the existing plan. Keep sleeping disabled for this dedicated project. `railway.toml` uses `/api/health`; the worker also exposes it. Initial resource caps: web 0.5 GB / 1 CPU, worker 2 GB / 2 CPUs. These are ceilings, not reservations or spending caps. Renders, PostgreSQL, storage, and always-on memory consume the Railway allowance.
 
-### 2.3 Get backend URL
+Use Railway variable references and secret inputs. Keep credentials out of command arguments, screenshots, Git, and chat. Set `PUBLIC_URL` to the final HTTPS domain on both services; it controls cookie and origin checks.
 
-Railway → **Settings → Networking → Generate domain**
+## Acceptance and operations
 
-Example: `https://vizion-api-production.up.railway.app`
+1. Confirm both deploys and `/api/health` return successfully.
+2. Register, save the recovery code, refresh, sign out, and sign back in.
+3. Create a narrow original topic; review, edit, and save a scene.
+4. Render and refresh while it works. Play/download the MP4 and confirm captions.
+5. Redeploy, sign back in, and confirm the same project/export survives.
+6. Confirm another account cannot read, edit, cancel, or download it.
 
-Test: open `https://YOUR_RAILWAY_URL/docs`
+Expired worker leases recover automatically, with at most three attempts. Cancellation fences old workers from overwriting state. Provider throttling has bounded retries and clear errors. An unrelated sample never silently replaces a failed topic, and there is no paid fallback. Rolling project/render reservations limit repeated usage.
 
-### 2.4 Resources
-
-- **Memory:** at least **2 GB** recommended (Manim renders)
-- **Timeout:** video generation can take 1–5 minutes; Railway HTTP timeout may need a paid plan for long requests
-
----
-
-## Step 3 — Frontend on Vercel
-
-### 3.1 Import project
-
-1. [vercel.com/new](https://vercel.com/new) → Import GitHub repo
-2. **Root Directory:** `vizion-ui`
-3. **Framework Preset:** Vite
-4. **Build Command:** `npm run build`
-5. **Output Directory:** `dist`
-
-### 3.2 Environment variable
-
-| Name | Value |
-|------|-------|
-| `VITE_API_URL` | `https://YOUR_RAILWAY_URL` (no trailing slash) |
-
-See [`vizion-ui/.env.production.example`](vizion-ui/.env.production.example).
-
-### 3.3 Deploy
-
-Vercel uses [`vizion-ui/vercel.json`](vizion-ui/vercel.json) for SPA routing.
-
-Copy your Vercel URL (e.g. `https://vizion.vercel.app`) and update:
-
-- Railway `FRONTEND_URL`
-- Supabase Auth Site URL + Redirect URLs
-
-Redeploy Railway after changing `FRONTEND_URL`.
-
----
-
-## Step 4 — Stripe webhook (optional)
-
-1. Stripe Dashboard → **Developers → Webhooks → Add endpoint**
-2. **URL:** `https://YOUR_RAILWAY_URL/billing/webhook`
-3. **Event:** `checkout.session.completed`
-4. Copy signing secret → Railway `STRIPE_WEBHOOK_SECRET`
-
-Use test card `4242 4242 4242 4242` before going live.
-
----
-
-## Step 5 — Smoke test
-
-1. Open your Vercel URL
-2. Sign up with a Gmail address
-3. Prompt: **"Draw a blue circle"**
-4. Wait 1–3 minutes for generation
-5. Video should play in the preview panel
-6. Check Supabase **Storage → videos** for uploaded MP4
-
----
-
-## Local development
-
-```bash
-# Backend
-cp env.example .env   # fill in keys
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-
-# Frontend (separate terminal)
-cd vizion-ui
-npm install
-npm run dev
-```
-
-Frontend defaults to `http://localhost:8000` when `VITE_API_URL` is unset.
-
----
-
-## Troubleshooting
-
-| Problem | Fix |
-|---------|-----|
-| CORS error in browser | Set Railway `FRONTEND_URL` to exact Vercel URL, `ENV=production`, redeploy |
-| `Invalid token` after deploy | Log out and sign up again on production Supabase |
-| `Could not find table chats` | Run `supabase/production_setup.sql` |
-| NetworkError / timeout | Railway plan may timeout long Manim renders; try simpler prompt first |
-| Video upload fails | Confirm `videos` bucket exists and `SUPABASE_SERVICE_KEY` is set |
-
----
-
-## Architecture
-
-```
-User → Vercel (React) → Railway (FastAPI + Manim)
-                              ↓
-                         Supabase (auth, chats, video storage)
-                              ↓
-                         Groq (LLM script generation)
-```
-
----
-
-## Files added for deployment
-
-| File | Purpose |
-|------|---------|
-| `Dockerfile` | Backend image with Manim + LaTeX |
-| `railway.toml` | Railway build config |
-| `vizion-ui/vercel.json` | SPA routing on Vercel |
-| `env.example` | Backend env template |
-| `vizion-ui/.env.production.example` | Frontend env template |
-| `vizion-ui/src/lib/api/config.ts` | `VITE_API_URL` helper |
-| `supabase/production_setup.sql` | One-shot production DB setup |
+Monitor Railway memory, CPU, storage, and account usage during real rendering. Groq free quotas are shared across its organization and can change. Enable suitable database backups before storing valuable work. `create_all` bootstraps this first schema; introduce explicit migrations before changing it. This MVP retains exports; add owner deletion and lifecycle retention before broader public launch.
