@@ -42,7 +42,7 @@ def test_invalid_draft_is_repaired_then_independently_reviewed(monkeypatch):
     assert requests[0]["response_format"]["json_schema"]["strict"] is True
     assert requests[1]["messages"][1] == requests[0]["messages"][1]
     assert "Preserve the requested topic" in requests[1]["messages"][-1]["content"]
-    assert is_review(requests[2]) and requests[2]["reasoning_effort"] == "high"
+    assert is_review(requests[2]) and requests[2]["reasoning_effort"] == "medium"
 
 
 def test_critic_issues_are_repaired_and_checked_again(monkeypatch):
@@ -132,3 +132,24 @@ def test_provider_json_generation_failure_is_retried_before_review(monkeypatch):
     mock_provider(monkeypatch, provider)
     assert plan_lesson("Explain the parabola through squaring", "beginner")[0].scenes
     assert len(calls) == 3
+
+
+def test_truncated_review_is_retried_with_the_verdict_contract(monkeypatch):
+    calls = []
+
+    def provider(request):
+        body = json.loads(request.content)
+        calls.append(body)
+        if len(calls) == 2:
+            return httpx.Response(
+                200, json={"choices": [{"finish_reason": "length", "message": {"content": ""}}]}
+            )
+        return model_response(
+            {"approved": True, "issues": []} if is_review(body) else example_storyboard().model_dump()
+        )
+
+    mock_provider(monkeypatch, provider)
+    assert plan_lesson("Explain the parabola through squaring", "beginner")[0].scenes
+    assert len(calls) == 3
+    assert "Do not return or rewrite the storyboard" in calls[-1]["messages"][-1]["content"]
+    assert calls[-1]["reasoning_effort"] == "low"

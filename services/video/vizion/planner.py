@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 
 import httpx
@@ -92,11 +93,7 @@ def _validated_output(messages, notify, phase, output_type=Storyboard):
                             "messages": messages,
                             "temperature": 0.3 if phase == "draft" else 0,
                             "max_completion_tokens": 4000 if output_type is ReviewVerdict else 5500,
-                            "reasoning_effort": "low"
-                            if phase == "draft"
-                            else "medium"
-                            if phase == "repair"
-                            else "high",
+                            "reasoning_effort": "low" if phase == "draft" or attempt else "medium",
                             "response_format": {"type": "json_object"}
                             if output_type is ReviewVerdict
                             else {
@@ -159,6 +156,13 @@ def _validated_output(messages, notify, phase, output_type=Storyboard):
                 plan = output_type.model_validate_json(raw)
                 return plan, model
             except ValidationError as exc:
+                logging.getLogger(__name__).warning(
+                    "Invalid model JSON phase=%s finish=%s completion_tokens=%s errors=%s",
+                    phase,
+                    (payload.get("choices") or [{}])[0].get("finish_reason"),
+                    (payload.get("usage") or {}).get("completion_tokens"),
+                    [error["type"] for error in exc.errors(include_input=False)],
+                )
                 # Never silently substitute an unrelated example after model failure.
                 messages.extend(
                     [
@@ -167,7 +171,11 @@ def _validated_output(messages, notify, phase, output_type=Storyboard):
                             "role": "user",
                             "content": "Correct this JSON response. Validation failed: "
                             + str(exc.errors(include_input=False))[:2000]
-                            + ". Preserve the requested topic.",
+                            + (
+                                ". Return ONLY approved (boolean) and issues (string array). Do not return or rewrite the storyboard."
+                                if output_type is ReviewVerdict
+                                else ". Preserve the requested topic."
+                            ),
                         },
                     ]
                 )
@@ -175,5 +183,7 @@ def _validated_output(messages, notify, phase, output_type=Storyboard):
             if attempt == 2:
                 raise PipelineError("The model returned an incomplete response. Retry this project.") from exc
     raise PipelineError(
-        "The lesson did not pass storyboard validation after three attempts. Try a narrower topic."
+        "The model did not return a valid review verdict. Your project is saved; retry it."
+        if output_type is ReviewVerdict
+        else "The lesson did not pass storyboard validation after three attempts. Try a narrower topic."
     )

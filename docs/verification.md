@@ -4,7 +4,7 @@ The canonical monorepo is `vizion`, with frontend code in `apps/web` and Python 
 
 ## Automated checks
 
-- 35 pytest cases pass: sessions, logout/recovery, secure cookies, CSRF/origin checks, rate limits, ownership, idempotency, quotas, optimistic revisions, cancellation, lease fencing/recovery, expression bounds, graph domains, measured caption timing, provider errors, independent review, repair, and failure handling.
+- 36 pytest cases pass: sessions, logout/recovery, secure cookies, CSRF/origin checks, rate limits, ownership, idempotency, quotas, optimistic revisions, cancellation, lease fencing/recovery, expression bounds, graph domains, measured caption timing, provider errors, independent review, repair, and failure handling.
 - Ruff, TypeScript/Vite production build, and ESLint pass.
 - GitHub Actions runs the same checks on Linux / Python 3.12 / Node 24.
 
