@@ -21,7 +21,7 @@ The canonical monorepo is `vizion`, with frontend code in `apps/web` and Python 
 
 ## Prompt regression
 
-A physics smoke check found an incorrect claim that a frictionless table cancels a horizontal push, and a later draft confused zero net force with no forces. The new independent critic returned concrete rejection reasons. The repair then correctly retained gravity and normal force, described acceleration during the push, and constant velocity after release; a separate verdict approved it. Real provider throttling and bounded retry behavior were also exercised.
+A physics smoke check found an incorrect claim that a frictionless table cancels a horizontal push, and a later draft confused zero net force with no forces. The new independent critic returned concrete rejection reasons. The repair then correctly retained gravity and normal force, described acceleration during the push, and constant velocity after release; a separate verdict approved it. Real provider throttling and bounded retry behavior were also exercised. The final deployed v2.3 pipeline then generated a reviewed physics storyboard; after a clarity edit in the studio, it rendered a second 50.59-second 720p H.264/AAC video. Its MP4, captions, frames, and browser playback were verified.
 
 Generated educational material still needs human review. These checks establish a working MVP flow and specific regressions, not universal factual correctness or production-scale capacity. Arbitrary 3D, verified email, billing, retention/deletion, backups, and explicit future database migrations remain follow-up work.
 
